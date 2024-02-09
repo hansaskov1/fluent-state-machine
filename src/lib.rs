@@ -1,4 +1,4 @@
-// From: E, To: E, F: FnMut(&mut S) -> bool
+// Explanation--Trigger: T, From: E, To: E, F: FnMut(&mut S) -> bool
 type Transition<T, E, S> = (T, E, E, Box<dyn FnMut(&mut S) -> bool>);
 
 pub struct StateMachine<T, E, S> {
