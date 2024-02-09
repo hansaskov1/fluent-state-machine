@@ -1,45 +1,9 @@
+use crate::lib::StateMachine;
+
 mod lib;
 
-// From: E, To: E, F: FnMut(&mut S) -> bool
-type Transition<E, S> = (E, E, Box<dyn FnMut(&mut S) -> bool>);
 
-struct StateMachine<E, S> {
-    pub transitions: Vec<Transition<E, S>>,
-    pub state: E,
-    pub store: S,
-}
-
-impl<E, S> StateMachine<E, S>
-where
-    S: Copy,
-    E: Default,
-{
-    fn new(store: S) -> Self {
-        Self {
-            transitions: Vec::new(),
-            state: E::default(),
-            store,
-        }
-    }
-
-    fn transition<F>(mut self, from: E, to: E, f: F) -> Self
-    where
-        F: FnMut(&mut S) -> bool + 'static,
-    {
-        self.transitions.push((from, to, Box::new(f)));
-        self
-    }
-
-    fn run(mut self) -> Self {
-        self.transitions.iter_mut().for_each(|(from, to, f)| {
-            f(&mut self.store);
-        });
-
-        self
-    }
-}
-
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 enum State {
     #[default]
     Idle,
@@ -48,11 +12,15 @@ enum State {
 }
 
 fn main() {
-    let storage = 0;
+    let store = 0;
 
-    let state_machine = StateMachine::<State, i32>::new(storage)
-        .transition(State::Idle, State::Paused, |store| store == &1)
-        .run();
+    let state_machine = StateMachine::new(store, State::Idle)
+        .transition(State::Idle, State::Paused, |store| {
+            *store += 1;
+            *store == 2
+        })
+        .execute_state(State::Idle);
 
     println!("{:?}", state_machine.store);
+    println!("{:?}", state_machine.state);
 }
