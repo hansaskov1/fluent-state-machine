@@ -1,54 +1,45 @@
 mod lib;
 
-struct Transition<T, S> {
-    pub from: S,
-    pub to: S,
-    pub action: Box<dyn FnMut(&mut T) -> bool>,
+// From: E, To: E, F: FnMut(&mut S) -> bool
+type Transition<E, S> = (E, E, Box<dyn FnMut(&mut S) -> bool>);
+
+struct StateMachine<E, S> {
+    pub transitions: Vec<Transition<E, S>>,
+    pub state: E,
+    pub store: S,
 }
 
-pub struct Machine<T, S> {
-    transitions: Vec<Transition<T, S>>,
-    current_state: S,
-    store: T,
-}
-
-impl<T, S> Machine<T, S> {
-    pub fn new(store: T) -> Self
-    where
-        S: Default,
-    {
+impl<E, S> StateMachine<E, S>
+where
+    S: Copy,
+    E: Default,
+{
+    fn new(store: S) -> Self {
         Self {
-            transitions: Vec::default(),
-            current_state: S::default(),
+            transitions: Vec::new(),
+            state: E::default(),
             store,
         }
     }
 
-    pub fn transition<F>(&mut self, from: S, to: S, action: F) -> &mut Self
+    fn transition<F>(mut self, from: E, to: E, f: F) -> Self
     where
-        F: FnMut(&mut T) -> bool + 'static,
+        F: FnMut(&mut S) -> bool + 'static,
     {
-        self.transitions.push(Transition {
-            from,
-            to,
-            action: Box::new(action),
-        });
+        self.transitions.push((from, to, Box::new(f)));
         self
     }
 
-    pub fn run(&mut self) 
-    where
-        S: PartialEq,
-    {
-       let filtered_transitions: Vec<_> = self.transitions
-            .iter()
-            .filter(|transitions| transitions.from == self.current_state)
-            .filter(|transitions| (transitions.action)(&mut self.store))
-            .collect();
+    fn run(mut self) -> Self {
+        self.transitions.iter_mut().for_each(|(from, to, f)| {
+            f(&mut self.store);
+        });
+
+        self
     }
 }
 
-#[derive(Default, Debug,)]
+#[derive(Default, Debug)]
 enum State {
     #[default]
     Idle,
@@ -57,15 +48,11 @@ enum State {
 }
 
 fn main() {
-    let mut binding = Machine::<_, State>::new(0);
-    let machine = binding
-        .transition(State::Idle, State::Paused, |i| {
-            *i = 1;
-            *i == 0
-        })
-        .transition(State::Paused, State::Running, |i| *i == 1)
-        .transition(State::Running, State::Paused, |i| *i == 2)
-        .transition(State::Paused, State::Idle, |i| *i == 3);
+    let storage = 0;
 
-    println!("{:?}", machine.store);
+    let state_machine = StateMachine::<State, i32>::new(storage)
+        .transition(State::Idle, State::Paused, |store| store == &1)
+        .run();
+
+    println!("{:?}", state_machine.store);
 }
