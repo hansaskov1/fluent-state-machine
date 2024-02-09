@@ -1,15 +1,15 @@
 // From: E, To: E, F: FnMut(&mut S) -> bool
-type Transition<E, S> = (E, E, Box<dyn FnMut(&mut S) -> bool>);
+type Transition<T, E, S> = (T, E, E, Box<dyn FnMut(&mut S) -> bool>);
 
-pub struct StateMachine<E, S> {
-    pub transitions: Vec<Transition<E, S>>,
+pub struct StateMachine<T, E, S> {
+    pub transitions: Vec<Transition<T, E, S>>,
     pub state: E,
     pub store: S,
 }
 
-impl<E, S> StateMachine<E, S>
+impl<T, E, S> StateMachine<T, E, S>
 where
-    E: Copy,
+    E: Copy + PartialEq,
 {
     pub fn new(store: S, state: E) -> Self {
         Self {
@@ -19,20 +19,20 @@ where
         }
     }
 
-    pub fn transition<F>(mut self, from: E, to: E, f: F) -> Self
+    pub fn transition<F>(mut self, trigger: T, from: E, to: E, f: F) -> Self
     where
         F: FnMut(&mut S) -> bool + 'static,
     {
-        self.transitions.push((from, to, Box::new(f)));
+        self.transitions.push((trigger, from, to, Box::new(f)));
         self
     }
 
-    pub fn execute_state(mut self, state: E) -> Self
+    pub fn trigger(mut self, in_trigger: T) -> Self
     where
-        E: PartialEq,
+        T: PartialEq,
     {
-        for (from, to, boolean_function) in self.transitions.iter_mut() {
-            if from != &state {
+        for (trigger, from, to, boolean_function) in self.transitions.iter_mut() {
+            if trigger != &in_trigger || self.state != *from {
                 continue;
             }
 
