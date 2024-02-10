@@ -1,4 +1,4 @@
-use state_machine_dsl::StateMachine;
+use state_machine_dsl::{StateMachine, StateMachineBuilder};
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -17,22 +17,23 @@ enum Triggers {
     Forward,
 }
 
-fn create_cd_player() -> StateMachine<Triggers, States, i32> {
+    fn create_cd_player() -> StateMachine<Triggers, States, i32> {
 
     // Create a new state machine
-    StateMachine::new(0, States::Stopped)
-    // Stopped
-    .transition(Triggers::Play ,States::Stopped, States::Playing, |track| *track > 0 )
-    .transition(Triggers::Forward ,States::Stopped, States::Stopped, |track| {*track += 1; false })
-    .transition(Triggers::Backward ,States::Stopped, States::Stopped, |track| {*track -= 1; false })
-    // Playing
-    .transition(Triggers::Stop ,States::Playing, States::Stopped, |track| {*track = 0; true })
-    .transition(Triggers::Pause ,States::Playing, States::Paused, |_| true )
-    // Paused
-    .transition(Triggers::Play ,States::Paused, States::Playing, |_| true )
-    .transition(Triggers::Stop ,States::Paused, States::Stopped, |track| {*track = 0; true })
-    .transition(Triggers::Forward ,States::Paused, States::Paused, |track| {*track += 1; false })
-    .transition(Triggers::Backward ,States::Paused, States::Paused, |track| {*track -= 1; false })
+    StateMachineBuilder::new(0, States::Stopped)
+    .state(States::Stopped)
+        .trigger(Triggers::Play, States::Playing).only_if(|track| *track > 0 )
+        .trigger(Triggers::Forward, States::Stopped).update(|track| *track += 1 )
+        .trigger(Triggers::Backward, States::Stopped).update(|track| *track -= 1)
+    .state(States::Playing)
+        .trigger(Triggers::Stop, States::Stopped).update(|track| *track = 0)
+        .trigger(Triggers::Pause, States::Paused)
+    .state(States::Paused)
+        .trigger(Triggers::Play, States::Playing)
+        .trigger(Triggers::Stop, States::Stopped).update(|track| *track = 0)
+        .trigger(Triggers::Forward, States::Paused).update(|track| *track += 1)
+        .trigger(Triggers::Backward, States::Paused).update(|track| *track -= 1)
+    .build()
 }
 
 

@@ -1,21 +1,22 @@
-use state_machine_dsl::StateMachine;
+use state_machine_dsl::{StateMachine, StateMachineBuilder};
 
-fn create_cd_player() -> StateMachine<&'static str, &'static str, i32> {
+fn create_cd_player() -> StateMachine<&'static str , &'static str, i32> {
 
     // Create a new state machine
-    StateMachine::new(0, "Stopped")
-    // Stopped
-    .transition("Play" ,"Stopped", "Playing", |track| *track > 0 )
-    .transition("Forward" ,"Stopped", "Stopped", |track| {*track += 1; false })
-    .transition("Backward" ,"Stopped", "Stopped", |track| {*track -= 1; false })
-    // Playing
-    .transition("Stop" ,"Playing", "Stopped", |track| {*track = 0; true })
-    .transition("Pause" ,"Playing", "Paused", |_| true )
-    // Paused
-    .transition("Play" ,"Paused", "Playing", |_| true )
-    .transition("Stop" ,"Paused", "Stopped", |track| {*track = 0; true })
-    .transition("Forward" ,"Paused", "Paused", |track| {*track += 1; false })
-    .transition("Backward" ,"Paused", "Paused", |track| {*track -= 1; false })
+    StateMachineBuilder::new(0, "Stopped")
+    .state("Stopped")
+        .trigger("Play", "Playing").only_if(|track| *track > 0 )
+        .trigger("Forward", "Stopped").update(|track| *track += 1 )
+        .trigger("Backward", "Stopped").update(|track| *track -= 1)
+    .state("Playing")
+        .trigger("Stop", "Stopped").update(|track| *track = 0)
+        .trigger("Pause", "Paused")
+    .state("Paused")
+        .trigger("Play", "Playing")
+        .trigger("Stop", "Stopped").update(|track| *track = 0)
+        .trigger("Forward", "Paused").update(|track| *track += 1)
+        .trigger("Backward", "Paused").update(|track| *track -= 1)
+    .build()
 }
 
 #[cfg(test)]
