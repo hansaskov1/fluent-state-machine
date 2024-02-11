@@ -17,22 +17,22 @@ enum Triggers {
     Forward,
 }
 
-    fn create_cd_player() -> StateMachine<Triggers, States, i32> {
+fn create_cd_player() -> StateMachine<Triggers, States, i32> {
 
     // Create a new state machine
     StateMachineBuilder::new(0, States::Stopped)
     .state(States::Stopped)
-        .trigger(Triggers::Play, States::Playing).only_if(|track| *track > 0 )
-        .trigger(Triggers::Forward, States::Stopped).update(|track| *track += 1 )
-        .trigger(Triggers::Backward, States::Stopped).update(|track| *track -= 1)
+        .event(Triggers::Play, States::Playing).only_if(|track| *track > 0 )
+        .event(Triggers::Forward, States::Stopped).update(|track| *track += 1 )
+        .event(Triggers::Backward, States::Stopped).update(|track| *track -= 1)
     .state(States::Playing)
-        .trigger(Triggers::Stop, States::Stopped).update(|track| *track = 0)
-        .trigger(Triggers::Pause, States::Paused)
+        .event(Triggers::Stop, States::Stopped).update(|track| *track = 0)
+        .event(Triggers::Pause, States::Paused)
     .state(States::Paused)
-        .trigger(Triggers::Play, States::Playing)
-        .trigger(Triggers::Stop, States::Stopped).update(|track| *track = 0)
-        .trigger(Triggers::Forward, States::Paused).update(|track| *track += 1)
-        .trigger(Triggers::Backward, States::Paused).update(|track| *track -= 1)
+        .event(Triggers::Play, States::Playing)
+        .event(Triggers::Stop, States::Stopped).update(|track| *track = 0)
+        .event(Triggers::Forward, States::Paused).update(|track| *track += 1)
+        .event(Triggers::Backward, States::Paused).update(|track| *track -= 1)
     .build()
 }
 

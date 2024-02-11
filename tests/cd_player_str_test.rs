@@ -3,19 +3,21 @@ use state_machine_dsl::{StateMachine, StateMachineBuilder};
 fn create_cd_player() -> StateMachine<&'static str , &'static str, i32> {
 
     // Create a new state machine
-    StateMachineBuilder::new(0, "Stopped")
+    let track = 0;
+
+    StateMachineBuilder::new(track, "Stopped")
     .state("Stopped")
-        .trigger("Play", "Playing").only_if(|track| *track > 0 )
-        .trigger("Forward", "Stopped").update(|track| *track += 1 )
-        .trigger("Backward", "Stopped").update(|track| *track -= 1)
+        .event("Play", "Playing").only_if(|track| *track > 0 )
+        .event("Forward", "Stopped").update(|track| *track += 1 )
+        .event("Backward", "Stopped").update(|track| *track -= 1)
     .state("Playing")
-        .trigger("Stop", "Stopped").update(|track| *track = 0)
-        .trigger("Pause", "Paused")
+        .event("Stop", "Stopped").update(|track| *track = 0)
+        .event("Pause", "Paused")
     .state("Paused")
-        .trigger("Play", "Playing")
-        .trigger("Stop", "Stopped").update(|track| *track = 0)
-        .trigger("Forward", "Paused").update(|track| *track += 1)
-        .trigger("Backward", "Paused").update(|track| *track -= 1)
+        .event("Play", "Playing")
+        .event("Stop", "Stopped").update(|track| *track = 0)
+        .event("Forward", "Paused").update(|track| *track += 1)
+        .event("Backward", "Paused").update(|track| *track -= 1)
     .build()
 }
 

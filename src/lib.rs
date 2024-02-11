@@ -42,9 +42,7 @@ where
 }
 
 pub struct StateMachineBuilder<T, E, S> {
-    transitions: Vec<Transition<T, E, S>>,
-    pub state: E,
-    pub store: S,
+    pub state_machine: StateMachine<T, E, S>,
     pub recent_state: E,
 }
 
@@ -54,9 +52,13 @@ where
 {
     pub fn new(store: S, state: E) -> Self {
         Self {
-            transitions: Vec::new(),
-            state,
-            store,
+            state_machine: {
+                StateMachine {
+                    transitions: Vec::new(),
+                    state,
+                    store,
+                }
+            },
             recent_state: state,
         }
     }
@@ -68,8 +70,8 @@ where
         }
     }
 
-    pub fn trigger(mut self, trigger: T, state: E) -> Self {
-        self.transitions.push(Transition {
+    pub fn event(mut self, trigger: T, state: E) -> Self {
+        self.state_machine.transitions.push(Transition {
             trigger,
             from: self.recent_state,
             to: state,
@@ -83,7 +85,7 @@ where
     where
         C: Fn(&S) -> bool + 'static,
     {
-        let last_transition = self.transitions.last_mut().unwrap();
+        let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.condition = Box::new(condition);
         self
     }
@@ -92,16 +94,12 @@ where
     where
         F: FnMut(&mut S) + 'static,
     {
-        let last_transition = self.transitions.last_mut().unwrap();
+        let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.before_trigger = Box::new(before);
         self
     }
 
     pub fn build(self) -> StateMachine<T, E, S> {
-        StateMachine {
-            transitions: self.transitions,
-            state: self.state,
-            store: self.store,
-        }
+        self.state_machine
     }
 }
