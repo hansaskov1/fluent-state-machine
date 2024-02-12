@@ -40,15 +40,22 @@ cargo test
 ### Creating a Turnstile State Machine with String Literals
 
 ```rs
-let turnstile = StateMachineBuilder::new((), "Locked")
+fn main() {
+
+    let mut turnstile = StateMachineBuilder::new((), "Locked")
     .state("Locked")
         .event("Coin", "UnLocked")
-        .event("Push", "Locked")
     .state("UnLocked")
-        .event("Coin", "UnLocked")
         .event("Push", "Locked")
     .build();
+
+    turnstile.trigger("Coin");
+
+    println!("State: {}", turnstile.state);
+}
 ```
+
+This code will print out `State: UnLocked`
 
 ### Creating a Turnstile State Machine with Enums
 
