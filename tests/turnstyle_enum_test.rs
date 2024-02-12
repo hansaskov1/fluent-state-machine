@@ -35,32 +35,32 @@ mod tests {
 
     #[test]
     fn test_locked() {
-        let sm = create_locked_turnstile()
-            .trigger(Triggers::Push);
+        let mut sm = create_locked_turnstile();
+        sm.trigger(Triggers::Push);
         assert_eq!(sm.state, States::Locked);  
     }
 
     #[test]
     fn test_unlocked() {
-        let sm = create_locked_turnstile()
-            .trigger(Triggers::Coin)
-            .trigger(Triggers::Push);
+        let mut sm = create_locked_turnstile();
+            sm.trigger(Triggers::Coin);
+            sm.trigger(Triggers::Push);
         assert_eq!(sm.state, States::Locked);  
     }
 
     #[test]
     fn test_locked_to_unlocked() {
-        let sm = create_locked_turnstile()
-            .trigger(Triggers::Coin);
+        let mut sm = create_locked_turnstile();
+            sm.trigger(Triggers::Coin);
         assert_eq!(sm.state, States::UnLocked);  
     }
 
     #[test]
     fn test_unlocked_to_locked() {
-        let sm = create_locked_turnstile()
-            .trigger(Triggers::Coin)
-            .trigger(Triggers::Push)
-            .trigger(Triggers::Push);
+        let mut sm = create_locked_turnstile();
+            sm.trigger(Triggers::Coin);
+            sm.trigger(Triggers::Push);
+            sm.trigger(Triggers::Push);
         assert_eq!(sm.state, States::Locked);  
     }
 
