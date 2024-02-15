@@ -3,6 +3,7 @@ struct Transition<Trigger, State, Store> {
     from_state: State,
     to_state: State,
     before_trigger: Box<dyn FnMut(&mut Store)>,
+    after_trigger: Box<dyn FnMut(&mut Store)>,
     condition: Box<dyn Fn(&Store) -> bool>,
 }
 
@@ -19,13 +20,19 @@ where
 {
     pub fn trigger(&mut self, trigger: Trigger) {
         for transition in &mut self.transitions {
+
+            // Filter out transitions that do not match the trigger or the current state
             if transition.trigger != trigger || self.state != transition.from_state {
                 continue;
             }
 
+            // Call the before_trigger function
             (transition.before_trigger)(&mut self.store);
 
+
+            // Call the efter trigger and set new state if condition is met
             if (transition.condition)(&self.store) {
+                (transition.after_trigger)(&mut self.store);
                 self.state = transition.to_state;
             }
         }
@@ -38,7 +45,7 @@ pub struct StateMachineBuilder<Trigger, State, Store> {
     last_added_state: State,
 }
 
-impl<Trigger, State, Store> StateMachineBuilder<Trigger, State, Store>
+impl<Event, State, Store> StateMachineBuilder<Event, State, Store>
 where
     State: Copy + PartialEq,
 {
@@ -58,14 +65,25 @@ where
         self
     }
 
-    pub fn event(mut self, trigger: Trigger, target_state: State) -> Self {
+    pub fn event(mut self, trigger: Event, new_state: State) -> Self {
         self.state_machine.transitions.push(Transition {
             trigger,
             from_state: self.last_added_state,
-            to_state: target_state,
+            to_state: new_state,
             condition: Box::new(|_| true),
             before_trigger: Box::new(|_| {}),
+            after_trigger: Box::new(|_| {}),
         });
+        self
+    }
+
+
+    pub fn before_condition<F>(mut self, trigger: F) -> Self
+    where
+        F: FnMut(&mut Store) + 'static
+    {
+        let last_transition = self.state_machine.transitions.last_mut().unwrap();
+        last_transition.before_trigger = Box::new(trigger);
         self
     }
 
@@ -78,16 +96,18 @@ where
         self
     }
 
-    pub fn before_trigger<F>(mut self, before_trigger: F) -> Self
+
+
+    pub fn after_condition<F>(mut self, trigger: F) -> Self
     where
         F: FnMut(&mut Store) + 'static
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.before_trigger = Box::new(before_trigger);
+        last_transition.after_trigger = Box::new(trigger);
         self
     }
 
-    pub fn build(self) -> StateMachine<Trigger, State, Store> {
+    pub fn build(self) -> StateMachine<Event, State, Store> {
         self.state_machine
     }
 }
