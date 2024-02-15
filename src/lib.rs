@@ -2,9 +2,9 @@ struct Transition<Trigger, State, Store> {
     trigger: Trigger,
     from_state: State,
     to_state: State,
-    before_trigger: Box<dyn FnMut(&mut Store)>,
-    after_trigger: Box<dyn FnMut(&mut Store)>,
-    condition: Box<dyn Fn(&Store) -> bool>,
+    before_trigger: fn(&mut Store),
+    after_trigger: fn(&mut Store),
+    condition: fn(&Store) -> bool,
 }
 
 pub struct StateMachine<Trigger, State, Store> {
@@ -70,40 +70,34 @@ where
             trigger,
             from_state: self.last_added_state,
             to_state: new_state,
-            condition: Box::new(|_| true),
-            before_trigger: Box::new(|_| {}),
-            after_trigger: Box::new(|_| {}),
+            condition: |_| true,
+            before_trigger: |_| {},
+            after_trigger: |_| {},
         });
         self
     }
 
 
-    pub fn before_condition<F>(mut self, trigger: F) -> Self
-    where
-        F: FnMut(&mut Store) + 'static
+    pub fn before_condition(mut self, trigger: fn(&mut Store)) -> Self
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.before_trigger = Box::new(trigger);
+        last_transition.before_trigger = trigger;
         self
     }
 
-    pub fn condition<C>(mut self, condition: C) -> Self
-    where
-        C: Fn(&Store) -> bool + 'static,
+    pub fn condition(mut self, condition: fn(&Store) -> bool) -> Self
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.condition = Box::new(condition);
+        last_transition.condition = condition;
         self
     }
 
 
 
-    pub fn after_condition<F>(mut self, trigger: F) -> Self
-    where
-        F: FnMut(&mut Store) + 'static
+    pub fn after_condition(mut self, trigger: fn(&mut Store)) -> Self
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.after_trigger = Box::new(trigger);
+        last_transition.after_trigger = trigger;
         self
     }
 
