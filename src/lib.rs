@@ -1,5 +1,5 @@
-struct Transition<Trigger, State, Store> {
-    trigger: Trigger,
+struct Transition<Event, State, Store> {
+    trigger: Event,
     from_state: State,
     to_state: State,
     before_trigger: fn(&mut Store),
@@ -7,22 +7,22 @@ struct Transition<Trigger, State, Store> {
     condition: fn(&Store) -> bool,
 }
 
-pub struct StateMachine<Trigger, State, Store> {
-    transitions: Vec<Transition<Trigger, State, Store>>,
+pub struct StateMachine<Event, State, Store> {
+    transitions: Vec<Transition<Event, State, Store>>,
     pub state: State,
     pub store: Store,
 }
 
-impl<Trigger, State, Store> StateMachine<Trigger, State, Store>
+impl<Event, State, Store> StateMachine<Event, State, Store>
 where
     State: Copy + PartialEq,
-    Trigger: PartialEq,
+    Event: PartialEq,
 {
-    pub fn trigger(&mut self, trigger: Trigger) {
+    pub fn trigger(&mut self, event: Event) {
         for transition in &mut self.transitions {
 
             // Filter out transitions that do not match the trigger or the current state
-            if transition.trigger != trigger || self.state != transition.from_state {
+            if transition.trigger != event || self.state != transition.from_state {
                 continue;
             }
 
@@ -36,12 +36,11 @@ where
                 self.state = transition.to_state;
             }
         }
-
     }
 }
 
-pub struct StateMachineBuilder<Trigger, State, Store> {
-    state_machine: StateMachine<Trigger, State, Store>,
+pub struct StateMachineBuilder<Event, State, Store> {
+    state_machine: StateMachine<Event, State, Store>,
     last_added_state: State,
 }
 
@@ -60,14 +59,16 @@ where
         }
     }
 
+    #[must_use]
     pub const fn state(mut self, state: State) -> Self {
         self.last_added_state = state;
         self
     }
 
-    pub fn event(mut self, trigger: Event, new_state: State) -> Self {
+    #[must_use]
+    pub fn event(mut self, event: Event, new_state: State) -> Self {
         self.state_machine.transitions.push(Transition {
-            trigger,
+            trigger: event,
             from_state: self.last_added_state,
             to_state: new_state,
             condition: |_| true,
@@ -78,13 +79,15 @@ where
     }
 
 
-    pub fn before_condition(mut self, trigger: fn(&mut Store)) -> Self
+    #[must_use]
+    pub fn before_condition(mut self, before_event: fn(&mut Store)) -> Self
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.before_trigger = trigger;
+        last_transition.before_trigger = before_event;
         self
     }
 
+    #[must_use]
     pub fn condition(mut self, condition: fn(&Store) -> bool) -> Self
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
@@ -93,11 +96,11 @@ where
     }
 
 
-
-    pub fn after_condition(mut self, trigger: fn(&mut Store)) -> Self
+    #[must_use]
+    pub fn after_condition(mut self, after_event: fn(&mut Store)) -> Self
     {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.after_trigger = trigger;
+        last_transition.after_trigger = after_event;
         self
     }
 
