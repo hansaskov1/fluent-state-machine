@@ -20,6 +20,7 @@ fn create_cd_player() -> StateMachine<&'static str , &'static str, i32> {
         .event("Forward", "Paused").before_condition(|track| *track += 1)
         .event("Backward", "Paused").before_condition(|track| *track -= 1)
     .build()
+    .unwrap()
 }
 
 #[cfg(test)]

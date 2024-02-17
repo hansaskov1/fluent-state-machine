@@ -39,7 +39,8 @@ fn create_soda_machine() -> StateMachine<Event, State, (i32, i32)> {
             .after_condition(|(coke, sprite)| if *coke > 0 {
                 *coke -= 1
             })
-        .build();
+        .build()
+        .unwrap();
 
     soda_machine
 }

@@ -42,7 +42,7 @@ fn create_cd_player() -> StateMachine<Event, States, i32> {
         .event(Backward, Paused).before_condition(|track| *track -= 1)
     .build();
 
-    return cd;
+    return cd.unwrap();
 }
 
 

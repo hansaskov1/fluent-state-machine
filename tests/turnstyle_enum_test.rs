@@ -27,6 +27,7 @@ fn create_locked_turnstile() -> StateMachine<Events, States, ()> {
         .event(Coin, UnLocked)
         .event(Push, Locked)
     .build()
+    .unwrap()
 }
 
 #[cfg(test)]
