@@ -80,7 +80,7 @@ This next example will showcase some more complex functionalities. Here we have 
 
 ![Cd Player Diagram](Cd-Player-Diagram.png)
 
-For this example we set an initial value of the track to 0 and the initial state to stopped. The play event has an additional check that it will only change state if the lamda function provided is true. The function we provice will only be true if the track is above 0. The Forward and Backward event will add or subtract 1 from the track state each time they are called.  
+For this example we set an initial value of the track to 0 and the initial state to stopped. The play event has an additional check that it will only change state if the lamda function provided is true. The function we provice will only be true if the track is above 0. The Forward and Backward event will add or subtract 1 from the track state each time they are called. Additionally we will set the track to 0 when the stopped event is triggered. This is done using the `.then()` function. 
 
 ```Rust 
 fn main() {
@@ -112,6 +112,14 @@ fn main() {
     cd_player.trigger("Play");
     println!("Track: {}, State: {}", cd_player.store, cd_player.state);
 }
+```
+
+Running this example gives us the following output: 
+
+``` text
+Track: 0, State: Stopped
+Track: 1, State: Stopped
+Track: 1, State: Playing
 ```
 
 
