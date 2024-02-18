@@ -6,20 +6,20 @@ fn main() {
     let track = 0;
     
     let mut cd_player = StateMachineBuilder::new( track, "Stopped")
-    .state("Stopped")
-        .when("Play").to("Playing").condition(|track| *track > 0 )
-        .when("Forward").before_condition(|track| *track += 1 )
-        .when("Backward").before_condition(|track| *track -= 1)
-    .state("Playing")
-        .when("Stop").to("Stopped").after_condition(|track| *track = 0)
-        .when("Pause").to("Paused")
-    .state("Paused")
-        .when("Play").to("Playing")
-        .when("Stop").to("Stopped").after_condition(|track| *track = 0)
-        .when("Forward").before_condition(|track| *track += 1)
-        .when("Backward").before_condition(|track| *track -= 1)
-    .build()
-    .unwrap();
+        .state("Stopped")
+            .on("Play").go_to("Playing").only_if(|track| *track > 0 )
+            .on("Forward").update(|track| *track += 1 )
+            .on("Backward").update(|track| *track -= 1)
+        .state("Playing")
+            .on("Stop").go_to("Stopped").update_after(|track| *track = 0)
+            .on("Pause").go_to("Paused")
+        .state("Paused")
+            .on("Play").go_to("Playing")
+            .on("Stop").go_to("Stopped").update_after(|track| *track = 0)
+            .on("Forward").update(|track| *track += 1)
+            .on("Backward").update(|track| *track -= 1)
+        .build()
+        .unwrap();
 
     println!("Track: {}, State: {}", cd_player.store, cd_player.state);
 

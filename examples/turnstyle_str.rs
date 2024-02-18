@@ -3,9 +3,9 @@ use state_machine_dsl::StateMachineBuilder;
 fn main() {
     let mut turnstyle = StateMachineBuilder::new((), "Locked")
         .state("Locked")
-            .when("Coin").to("Unlocked")
+            .on("Coin").go_to("Unlocked")
         .state("Unlocked")
-            .when("Push").to("Locked")
+            .on("Push").go_to("Locked")
         .build().unwrap();
 
     turnstyle.trigger("Coin");

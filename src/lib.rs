@@ -1,6 +1,5 @@
 mod errors;
 use errors::StateMachineError;
-use std::mem::replace;
 
 pub struct Transition<Event, State, Store> {
     event: Event,
@@ -70,7 +69,7 @@ where
     }
 
     #[must_use]
-    pub fn when(mut self, event: Event) -> Self {
+    pub fn on(mut self, event: Event) -> Self {
         self.state_machine.transitions.push(Transition {
             event,
             from_state: self.last_added_state,
@@ -82,28 +81,28 @@ where
         self
     }
 
-    pub fn to(mut self, target: State) -> Self {
+    pub fn go_to(mut self, target: State) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.to_state = target;
         self
     }
 
     #[must_use]
-    pub fn before_condition(mut self, before_event: fn(&mut Store)) -> Self {
+    pub fn update(mut self, before_event: fn(&mut Store)) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.before_event = before_event;
         self
     }
 
     #[must_use]
-    pub fn condition(mut self, condition: fn(&Store) -> bool) -> Self {
+    pub fn only_if(mut self, condition: fn(&Store) -> bool) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.condition = condition;
         self
     }
 
     #[must_use]
-    pub fn after_condition(mut self, after_event: fn(&mut Store)) -> Self {
+    pub fn update_after(mut self, after_event: fn(&mut Store)) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.after_event = after_event;
         self

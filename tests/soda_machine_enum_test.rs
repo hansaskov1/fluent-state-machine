@@ -27,16 +27,16 @@ fn create_soda_machine() -> StateMachine<Event, State, (i32, i32)> {
 
     let soda_machine = StateMachineBuilder::new(container, Start)
         .state(Start)
-            .when(Coin).to(Select)
-            .when(Refill).to(Start)
-                .before_condition(|(coke, sprite)| {println!("Pow"); *coke = 3; *sprite = 3;})
+            .on(Coin).go_to(Select)
+            .on(Refill)
+                .update(|(coke, sprite)| {println!("Pow"); *coke = 3; *sprite = 3;})
         .state(Select)
-            .when(Coke).to(Start)
-                .after_condition(|(coke, sprite)| if *coke > 0 {
+            .on(Coke).go_to(Start)
+                .update_after(|(coke, sprite)| if *coke > 0 {
                     *coke -= 1
                 })
-            .when(Sprite).to(Start)
-            .after_condition(|(coke, sprite)| if *coke > 0 {
+            .on(Sprite).go_to(Start)
+            .update_after(|(coke, sprite)| if *coke > 0 {
                 *coke -= 1
             })
         .build()
