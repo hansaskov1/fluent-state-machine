@@ -41,17 +41,15 @@ cargo test
 
 ```rs
 fn main() {
+    let mut turnstyle = StateMachineBuilder::new((), "Locked")
+        .state("Locked")
+            .on("Coin").go_to("Unlocked")
+        .state("Unlocked")
+            .on("Push").go_to("Locked")
+        .build().unwrap();
 
-    let mut turnstile = StateMachineBuilder::new((), "Locked")
-    .state("Locked")
-        .event("Coin", "UnLocked")
-    .state("UnLocked")
-        .event("Push", "Locked")
-    .build();
-
-    turnstile.trigger("Coin");
-
-    println!("State: {}", turnstile.state);
+    turnstyle.trigger("Coin");
+    println!("State: {}", turnstyle.state);
 }
 ```
 
@@ -61,31 +59,71 @@ This code will print out `State: UnLocked`
 
 ```rs
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum States {
+enum State {
     Locked,
     UnLocked
 }
 
 #[derive(PartialEq)]
-enum Triggers {
+enum Event {
     Coin,
     Push,
 }
 
-let turnstile = StateMachineBuilder::new((), States::Locked)
-    .state(States::Locked)
-        .event(Triggers::Coin, States::UnLocked)
-        .event(Triggers::Push, States::Locked)
-    .state(States::UnLocked)
-        .event(Triggers::Coin, States::UnLocked)
-        .event(Triggers::Push, States::Locked)
-    .build();
+fn main() {
+    
+    let mut turnstyle = StateMachineBuilder::new((), State::Locked)
+        .state(State::Locked)
+            .on(Event::Coin).go_to(State::UnLocked)
+        .state(State::UnLocked)
+            .on(Event::Push).go_to(State::Locked)
+        .build().unwrap();
+
+    turnstyle.trigger(Event::Coin);
+    println!("State: {:?}", turnstyle.state);
+}
+```
+This will also print out "State: UnLocked"
+
+
+And here is a more complex example for a Cd-Player
+
+```Rust 
+fn main() {
+
+    // Create store for state machine. In this case it is an integer
+    let track = 0;
+    
+    let mut cd_player = StateMachineBuilder::new( track, "Stopped")
+        .state("Stopped")
+            .on("Play").go_to("Playing").only_if(|track| *track > 0 )
+            .on("Forward").update(|track| *track += 1 )
+            .on("Backward").update(|track| *track -= 1)
+        .state("Playing")
+            .on("Stop").go_to("Stopped").then(|track| *track = 0)
+            .on("Pause").go_to("Paused")
+        .state("Paused")
+            .on("Play").go_to("Playing")
+            .on("Stop").go_to("Stopped").then(|track| *track = 0)
+            .on("Forward").update(|track| *track += 1)
+            .on("Backward").update(|track| *track -= 1)
+        .build()
+        .unwrap();
+
+    println!("Track: {}, State: {}", cd_player.store, cd_player.state);
+
+    cd_player.trigger("Forward");
+    println!("Track: {}, State: {}", cd_player.store, cd_player.state);
+
+    cd_player.trigger("Play");
+    println!("Track: {}, State: {}", cd_player.store, cd_player.state);
+}
 ```
 
-## Contributing
+Running this example gives us the following output: 
+"
+Track: 0, State: Stopped
+Track: 1, State: Stopped
+Track: 1, State: Playing
+"
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
