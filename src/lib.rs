@@ -102,7 +102,7 @@ where
     }
 
     #[must_use]
-    pub fn update_after(mut self, after_event: fn(&mut Store)) -> Self {
+    pub fn then(mut self, after_event: fn(&mut Store)) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.after_event = after_event;
         self

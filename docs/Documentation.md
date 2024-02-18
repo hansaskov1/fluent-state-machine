@@ -13,14 +13,14 @@ Inserting a coin will change the state from locked to Unlocked, where it would t
 
 ![Turnstyle Diagram](Turnstyle-Diagram.png)
 
-The same example can be implemented using the StateMachineBuilder. The first two arguments are for the internal store and the initial state for the state machine. Use the `.state` function to add a new state and use `.event(event, Target)` for creating an event that changes the internal state when triggered. Build will check for a valid state_machine and either return the StateMachine or an error. 
+The same example can be implemented using the StateMachineBuilder. The first two arguments are for the internal store and the initial state for the state machine. Use the `.state` function to add a new state and use `.on` for creating a new event where `.go_to` describes which state to change to when triggered. Build will check for a valid state_machine and either return the StateMachine or an error. In this example we use `unwrap()` to stop the program if the build is not suceccfull.   
 ``` Rust
 fn main() {
     let mut turnstyle = StateMachineBuilder::new((), "Locked")
         .state("Locked")
-            .event("Coin", "Unlocked")
+            .on("Coin").go_to("Unlocked")
         .state("Unlocked")
-            .event("Push", "Locked")
+            .on("Push").go_to("Locked")
         .build().unwrap();
 
     turnstyle.trigger("Coin");
@@ -59,9 +59,9 @@ fn main() {
     
     let mut turnstyle = StateMachineBuilder::new((), Locked)
         .state(Locked)
-            .event(Coin, UnLocked)
+            .on(Coin).go_to(UnLocked)
         .state(UnLocked)
-            .event(Push, Locked)
+            .on(Push).go_to(Locked)
         .build().unwrap();
 
     turnstyle.trigger(Coin);
@@ -80,7 +80,7 @@ This next example will showcase some more complex functionalities. Here we have 
 
 ![Cd Player Diagram](Cd-Player-Diagram.png)
 
-For this example the initial value of the track is set to 0 and the initial state is set to stopped. A condition is set on the Play event for the stopped state which which will only change the state to playing if the track is above 0. The Forward and Backward event will add or subtract 1 from the track state 
+For this example we set an initial value of the track to 0 and the initial state to stopped. The play event has an additional check that it will only change state if the lamda function provided is true. The function we provice will only be true if the track is above 0. The Forward and Backward event will add or subtract 1 from the track state each time they are called.  
 
 ```Rust 
 fn main() {
@@ -88,21 +88,21 @@ fn main() {
     // Create store for state machine. In this case it is an integer
     let track = 0;
     
-    let mut cd_player = StateMachineBuilder::new(track, "Stopped")
-    .state("Stopped")
-        .event("Play", "Playing").condition(|track| *track > 0 )
-        .event("Forward", "Stopped").before_condition(|track| *track += 1 )
-        .event("Backward", "Stopped").before_condition(|track| *track -= 1)
-    .state("Playing")
-        .event("Stop", "Stopped").after_condition(|track| *track = 0)
-        .event("Pause", "Paused")
-    .state("Paused")
-        .event("Play", "Playing")
-        .event("Stop", "Stopped").after_condition(|track| *track = 0)
-        .event("Forward", "Paused").before_condition(|track| *track += 1)
-        .event("Backward", "Paused").before_condition(|track| *track -= 1)
-    .build()
-    .unwrap();
+    let mut cd_player = StateMachineBuilder::new( track, "Stopped")
+        .state("Stopped")
+            .on("Play").go_to("Playing").only_if(|track| *track > 0 )
+            .on("Forward").update(|track| *track += 1 )
+            .on("Backward").update(|track| *track -= 1)
+        .state("Playing")
+            .on("Stop").go_to("Stopped").then(|track| *track = 0)
+            .on("Pause").go_to("Paused")
+        .state("Paused")
+            .on("Play").go_to("Playing")
+            .on("Stop").go_to("Stopped").then(|track| *track = 0)
+            .on("Forward").update(|track| *track += 1)
+            .on("Backward").update(|track| *track -= 1)
+        .build()
+        .unwrap();
 
     println!("Track: {}, State: {}", cd_player.store, cd_player.state);
 
