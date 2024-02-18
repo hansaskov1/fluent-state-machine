@@ -27,22 +27,21 @@ fn create_cd_player() -> StateMachine<Event, States, i32> {
     let track = 0;
 
     // Construct state machine.
-    let cd = StateMachineBuilder::new(track, Stopped)
-    .state(Stopped)
-        .event(Play, Playing).condition(|track| *track > 0 )
-        .event(Forward, Stopped).before_condition(|track| *track += 1 )
-        .event(Backward, Stopped).before_condition(|track| *track -= 1)
-    .state(Playing)
-        .event(Pause, Paused)
-        .event(Stop, Stopped).after_condition(|track| *track = 0)
-    .state(Paused)
-        .event(Play, Playing)
-        .event(Stop, Stopped).after_condition(|track| *track = 0)
-        .event(Forward, Paused).before_condition(|track| *track += 1)
-        .event(Backward, Paused).before_condition(|track| *track -= 1)
-    .build();
-
-    return cd.unwrap();
+    StateMachineBuilder::new( track, Stopped)
+        .state(Stopped)
+            .when(Play).to(Playing).condition(|track| *track > 0 )
+            .when(Forward).before_condition(|track| *track += 1 )
+            .when(Backward).before_condition(|track| *track -= 1)
+        .state(Playing)
+            .when(Stop).to(Stopped).after_condition(|track| *track = 0)
+            .when(Pause).to(Paused)
+        .state(Paused)
+            .when(Play).to(Playing)
+            .when(Stop).to(Stopped).after_condition(|track| *track = 0)
+            .when(Forward).before_condition(|track| *track += 1)
+            .when(Backward).before_condition(|track| *track -= 1)
+        .build()
+        .unwrap()
 }
 
 

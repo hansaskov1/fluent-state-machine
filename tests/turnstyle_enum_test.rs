@@ -21,11 +21,9 @@ fn create_locked_turnstile() -> StateMachine<Events, States, ()> {
 
     StateMachineBuilder::new((), Locked)
     .state(Locked)
-        .event(Coin, UnLocked)
-        .event(Push, Locked)
+        .when(Coin).to(UnLocked)
     .state(UnLocked)
-        .event(Coin, UnLocked)
-        .event(Push, Locked)
+        .when(Push).to(Locked)
     .build()
     .unwrap()
 }

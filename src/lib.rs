@@ -1,7 +1,8 @@
-use std::collections::HashSet;
+mod errors;
+use errors::StateMachineError;
+use std::mem::replace;
 
-
-struct Transition<Event, State, Store> {
+pub struct Transition<Event, State, Store> {
     event: Event,
     from_state: State,
     to_state: State,
@@ -16,35 +17,34 @@ pub struct StateMachine<Event, State, Store> {
     pub store: Store,
 }
 
+pub struct StateMachineBuilder<Event, State, Store> {
+    state_machine: StateMachine<Event, State, Store>,
+    last_added_state: State,
+}
+
 impl<Event, State, Store> StateMachine<Event, State, Store>
 where
     State: Copy + PartialEq,
     Event: PartialEq,
 {
+    // Trigger an event, this will result in the state machine changing state if the condition is met. By default the condition is always true.
     pub fn trigger(&mut self, event: Event) {
         for transition in &mut self.transitions {
-
             // Filter out transitions that do not match the trigger or the current state
             if transition.event != event || self.state != transition.from_state {
                 continue;
             }
 
-            // Call the before_trigger function
+            // Call the before_event function
             (transition.before_event)(&mut self.store);
 
-
-            // Call the efter trigger and set new state if condition is met
+            // If condition is met call the after trigger and change internal state
             if (transition.condition)(&self.store) {
                 (transition.after_event)(&mut self.store);
                 self.state = transition.to_state;
             }
         }
     }
-}
-
-pub struct StateMachineBuilder<Event, State, Store> {
-    state_machine: StateMachine<Event, State, Store>,
-    last_added_state: State,
 }
 
 impl<Event, State, Store> StateMachineBuilder<Event, State, Store>
@@ -70,12 +70,11 @@ where
     }
 
     #[must_use]
-    pub fn event(mut self, event: Event, new_state: State) -> Self {
-
+    pub fn when(mut self, event: Event) -> Self {
         self.state_machine.transitions.push(Transition {
             event,
             from_state: self.last_added_state,
-            to_state: new_state,
+            to_state: self.last_added_state,
             condition: |_| true,
             before_event: |_| {},
             after_event: |_| {},
@@ -83,63 +82,47 @@ where
         self
     }
 
+    pub fn to(mut self, target: State) -> Self {
+        let last_transition = self.state_machine.transitions.last_mut().unwrap();
+        last_transition.to_state = target;
+        self
+    }
 
     #[must_use]
-    pub fn before_condition(mut self, before_event: fn(&mut Store)) -> Self
-    {
+    pub fn before_condition(mut self, before_event: fn(&mut Store)) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.before_event = before_event;
         self
     }
 
     #[must_use]
-    pub fn condition(mut self, condition: fn(&Store) -> bool) -> Self
-    {
+    pub fn condition(mut self, condition: fn(&Store) -> bool) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.condition = condition;
         self
     }
 
-
     #[must_use]
-    pub fn after_condition(mut self, after_event: fn(&mut Store)) -> Self
-    {
+    pub fn after_condition(mut self, after_event: fn(&mut Store)) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.after_event = after_event;
         self
     }
 
+    // Build the state machine and return the result. If there are any duplicate transitions an error will be returned.
     pub fn build(self) -> Result<StateMachine<Event, State, Store>, StateMachineError> {
         let transitions = &self.state_machine.transitions;
 
         for i in 0..transitions.len() {
-            for j in i+1..transitions.len() {
-                if transitions[i].event == transitions[j].event &&
-                   transitions[i].from_state == transitions[j].from_state &&
-                   transitions[i].to_state == transitions[j].to_state {
+            for j in i + 1..transitions.len() {
+                if transitions[i].event == transitions[j].event
+                    && transitions[i].from_state == transitions[j].from_state
+                    && transitions[i].to_state == transitions[j].to_state
+                {
                     return Err(StateMachineError::DuplicateTransition);
                 }
             }
         }
-
         Ok(self.state_machine)
     }
 }
-
-
-#[derive(Debug)]
-pub enum StateMachineError {
-    DuplicateTransition,
-    // Add other error types as needed
-}
-
-impl std::fmt::Display for StateMachineError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            StateMachineError::DuplicateTransition => write!(f, "Duplicate transition found"),
-            // Add other error types as needed
-        }
-    }
-}
-
-impl std::error::Error for StateMachineError {}

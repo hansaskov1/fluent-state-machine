@@ -1,26 +1,28 @@
 use state_machine_dsl::{StateMachine, StateMachineBuilder};
 
+
+
 fn create_cd_player() -> StateMachine<&'static str , &'static str, i32> {
 
     // Create store for state machine. In this case it is an integer
     let track = 0;
     
     // Construct state machine and return the result. 
-    StateMachineBuilder::new(track, "Stopped")
-    .state("Stopped")
-        .event("Play", "Playing").condition(|track| *track > 0 )
-        .event("Forward", "Stopped").before_condition(|track| *track += 1 )
-        .event("Backward", "Stopped").before_condition(|track| *track -= 1)
-    .state("Playing")
-        .event("Stop", "Stopped").after_condition(|track| *track = 0)
-        .event("Pause", "Paused")
-    .state("Paused")
-        .event("Play", "Playing")
-        .event("Stop", "Stopped").after_condition(|track| *track = 0)
-        .event("Forward", "Paused").before_condition(|track| *track += 1)
-        .event("Backward", "Paused").before_condition(|track| *track -= 1)
-    .build()
-    .unwrap()
+    StateMachineBuilder::new( track, "Stopped")
+        .state("Stopped")
+            .when("Play").to("Playing").condition(|track| *track > 0 )
+            .when("Forward").before_condition(|track| *track += 1 )
+            .when("Backward").before_condition(|track| *track -= 1)
+        .state("Playing")
+            .when("Stop").to("Stopped").after_condition(|track| *track = 0)
+            .when("Pause").to("Paused")
+        .state("Paused")
+            .when("Play").to("Playing")
+            .when("Stop").to("Stopped").after_condition(|track| *track = 0)
+            .when("Forward").before_condition(|track| *track += 1)
+            .when("Backward").before_condition(|track| *track -= 1)
+        .build()
+        .unwrap()
 }
 
 #[cfg(test)]
