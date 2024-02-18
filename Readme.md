@@ -20,11 +20,10 @@ cd state_machine_dsl
 ```
 
 ### Running the Project
-
-Navigate to the project directory and run the project with:
+You can run one of the three available examples [cd_player](examples/cd_player.rs),  [turnstile_enum](examples/turnstile_enum.rs), [turnstile_str](examples/turnstile_str.rs). Here is how to run the cd_player example
 
 ```sh
-cargo run
+cargo run --example cd_player
 ```
 
 ### Running the Tests
