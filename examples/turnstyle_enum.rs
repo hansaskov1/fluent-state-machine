@@ -13,20 +13,17 @@ enum Event {
 }
 
 fn main() {
-
-    use State::{Locked, UnLocked};
-    use Event::{Coin, Push};
     
-    let mut turnstyle = StateMachineBuilder::new((), Locked)
-        .state(Locked)
-            .on(Coin).go_to(UnLocked)
-        .state(UnLocked)
-            .on(Push).go_to(Locked)
+    let mut turnstyle = StateMachineBuilder::new((), State::Locked)
+        .state(State::Locked)
+            .on(Event::Coin).go_to(State::UnLocked)
+        .state(State::UnLocked)
+            .on(Event::Push).go_to(State::Locked)
         .build().unwrap();
 
-    turnstyle.trigger(Coin);
+    turnstyle.trigger(Event::Coin);
     println!("State: {:?}", turnstyle.state);
 
-    turnstyle.trigger(Push);
+    turnstyle.trigger(Event::Push);
     println!("State: {:?}", turnstyle.state);
 }
