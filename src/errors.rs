@@ -8,7 +8,7 @@ pub enum StateMachineError {
 impl std::fmt::Display for StateMachineError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            StateMachineError::DuplicateTransition => write!(f, "Duplicate transition found"),
+            Self::DuplicateTransition => write!(f, "Duplicate transition found"),
             // Add other error types as needed
         }
     }
