@@ -15,7 +15,7 @@ You need to have Rust and Cargo installed on your machine. If you don't have the
 To clone the repository, run the following command:
 
 ```sh
-git clone https://github.com/hansaskov/state_machine_dsl.git
+git clone https://github.com/hansaskov1/state_machine_dsl.git
 cd state_machine_dsl
 ```
 
