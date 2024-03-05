@@ -19,6 +19,7 @@ pub struct StateMachine<Event, State, Store> {
 pub struct StateMachineBuilder<Event, State, Store> {
     state_machine: StateMachine<Event, State, Store>,
     last_added_state: State,
+    errors: Vec<StateMachineError>,
 }
 
 impl<Event, State, Store> StateMachine<Event, State, Store>
@@ -41,6 +42,7 @@ where
             if (transition.condition)(&self.store) {
                 (transition.after_event)(&mut self.store);
                 self.state = transition.to_state;
+                break;
             }
         }
     }
@@ -59,6 +61,7 @@ where
                 store: data_store,
             },
             last_added_state: initial_state,
+            errors: Vec::new(),
         }
     }
 
@@ -83,46 +86,57 @@ where
 
     #[must_use]
     pub fn go_to(mut self, target: State) -> Self {
-        let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.to_state = target;
+        self.update_last_transition(|transition| transition.to_state = target);
         self
     }
 
     #[must_use]
     pub fn update(mut self, before_event: fn(&mut Store)) -> Self {
-        let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.before_event = before_event;
+        self.update_last_transition(|transition| transition.before_event = before_event);
         self
     }
 
     #[must_use]
     pub fn only_if(mut self, condition: fn(&Store) -> bool) -> Self {
-        let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.condition = condition;
+        self.update_last_transition(|transition| transition.condition = condition);
         self
     }
 
     #[must_use]
     pub fn then(mut self, after_event: fn(&mut Store)) -> Self {
-        let last_transition = self.state_machine.transitions.last_mut().unwrap();
-        last_transition.after_event = after_event;
+        self.update_last_transition(|transition| transition.after_event = after_event);
         self
     }
 
-    // Build the state machine and return the result. If there are any duplicate transitions an error will be returned.
-    pub fn build(self) -> Result<StateMachine<Event, State, Store>, StateMachineError> {
-        let transitions = &self.state_machine.transitions;
+    fn update_last_transition<F>(&mut self, mut update: F)
+    where
+        F: FnMut(&mut Transition<Event, State, Store>),
+    {
+        match self.state_machine.transitions.last_mut() {
+            None => self.errors.push(StateMachineError::MissingState),
+            Some(transition) => update(transition),
+        }
+    }
 
+    // Build the state machine and return the result. If there are any duplicate transitions an error will be returned.
+    pub fn build(mut self) -> Result<StateMachine<Event, State, Store>, Vec<StateMachineError>> {
+        let transitions = &self.state_machine.transitions;
+    
         for i in 0..transitions.len() {
             for j in i + 1..transitions.len() {
                 if transitions[i].event == transitions[j].event
                     && transitions[i].from_state == transitions[j].from_state
                     && transitions[i].to_state == transitions[j].to_state
                 {
-                    return Err(StateMachineError::DuplicateTransition);
+                    self.errors.push(StateMachineError::DuplicateTransition);
                 }
             }
         }
+    
+        if !self.errors.is_empty() {
+            return Err(self.errors);
+        }
+    
         Ok(self.state_machine)
     }
 }

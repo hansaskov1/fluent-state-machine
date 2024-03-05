@@ -32,11 +32,11 @@ fn create_soda_machine() -> StateMachine<Event, State, (i32, i32)> {
                 .update(|(coke, sprite)| {println!("Pow"); *coke = 3; *sprite = 3;})
         .state(Select)
             .on(Coke).go_to(Start)
-                .then(|(coke, sprite)| if *coke > 0 {
+                .then(|(coke, _sprite)| if *coke > 0 {
                     *coke -= 1
                 })
             .on(Sprite).go_to(Start)
-            .then(|(coke, sprite)| if *coke > 0 {
+            .then(|(coke, _sprite)| if *coke > 0 {
                 *coke -= 1
             })
         .build()
