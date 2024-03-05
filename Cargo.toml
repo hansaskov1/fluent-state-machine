@@ -9,6 +9,10 @@ license = "MIT" # The license for the package
 repository = "https://github.com/hansaskov1/state_machine_dsl" # The URL to the package's repository
 keywords = ["state-machine", "dsl", "rust"] # Keywords that describe the package
 readme = "Readme.md" # The file that contains the package's README
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
