@@ -81,6 +81,7 @@ where
         self
     }
 
+    #[must_use]
     pub fn go_to(mut self, target: State) -> Self {
         let last_transition = self.state_machine.transitions.last_mut().unwrap();
         last_transition.to_state = target;

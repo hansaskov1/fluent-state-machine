@@ -1,4 +1,4 @@
-use state_machine_dsl::{StateMachine, StateMachineBuilder};
+use fluent_state_machine::{StateMachine, StateMachineBuilder};
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]

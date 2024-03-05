@@ -1,14 +1,20 @@
 [package]
-name = "state_machine_dsl"
+name = "fluent_state_machine"
 version = "0.1.0"
 edition = "2021"
+
+authors = ["Hans Askov <hans@askov.dk>"] # The package authors
+description = "A domain-specific language (DSL) for creating state machines in Rust" # A short description of the package
+license = "MIT" # The license for the package
+repository = "https://github.com/hansaskov1/state_machine_dsl" # The URL to the package's repository
+keywords = ["state-machine", "dsl", "rust"] # Keywords that describe the package
+readme = "Readme.md" # The file that contains the package's README
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 
 [dev-dependencies]
-#pretty_assertions = "1.3.0"                         # nicer looking assertions
 
 [lints.rust]
 unsafe_code = "forbid"

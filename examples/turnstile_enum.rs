@@ -1,4 +1,4 @@
-use state_machine_dsl::StateMachineBuilder;
+use fluent_state_machine::StateMachineBuilder;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum State {

@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "state_machine_dsl"
+name = "fluent_state_machine"
 version = "0.1.0"

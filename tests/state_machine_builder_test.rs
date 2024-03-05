@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod build_tests {
-    use state_machine_dsl::StateMachineBuilder;
+    use fluent_state_machine::StateMachineBuilder;
 
     #[test]
     fn test_default_case() {
