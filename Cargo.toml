@@ -10,7 +10,7 @@ repository = "https://github.com/hansaskov1/state_machine_dsl" # The URL to the 
 keywords = ["state-machine", "dsl", "rust"] # Keywords that describe the package
 readme = "Readme.md" # The file that contains the package's README
 include = [
-    "**/*.rs",
+    "src/*.rs",
     "Cargo.toml",
 ]
 
