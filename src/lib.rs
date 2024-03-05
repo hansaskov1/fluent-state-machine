@@ -16,6 +16,26 @@ pub struct StateMachine<Event, State, Store> {
     pub store: Store,
 }
 
+/// `StateMachineBuilder` is used to build a `StateMachine`.
+///
+/// # Example
+///
+/// ```
+/// use fluent_state_machine::StateMachineBuilder;
+/// 
+/// let mut turnstyle = StateMachineBuilder::new((), "Locked")
+///     .state("Locked")
+///         .on("Coin").go_to("Unlocked")
+///     .state("Unlocked")
+///         .on("Push").go_to("Locked")
+///     .build().unwrap();
+///
+/// turnstyle.trigger("Coin");
+/// assert_eq!(turnstyle.state, "Unlocked");
+///
+/// turnstyle.trigger("Push");
+/// assert_eq!(turnstyle.state, "Locked");
+/// ```
 pub struct StateMachineBuilder<Event, State, Store> {
     state_machine: StateMachine<Event, State, Store>,
     last_added_state: State,
@@ -28,6 +48,7 @@ where
     Event: PartialEq,
 {
     // Trigger an event, this will result in the state machine changing state if the condition is met. By default the condition is always true.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn trigger(&mut self, event: Event) {
         for transition in &mut self.transitions {
             // Filter out transitions that do not match the trigger or the current state
@@ -121,7 +142,7 @@ where
     // Build the state machine and return the result. If there are any duplicate transitions an error will be returned.
     pub fn build(mut self) -> Result<StateMachine<Event, State, Store>, Vec<StateMachineError>> {
         let transitions = &self.state_machine.transitions;
-    
+
         for i in 0..transitions.len() {
             for j in i + 1..transitions.len() {
                 if transitions[i].event == transitions[j].event
@@ -132,11 +153,11 @@ where
                 }
             }
         }
-    
+
         if !self.errors.is_empty() {
             return Err(self.errors);
         }
-    
+
         Ok(self.state_machine)
     }
 }
