@@ -11,6 +11,7 @@ pub struct Transition<Event, State, Store> {
 }
 
 pub struct StateMachine<Event, State, Store> {
+    global_action: fn(&mut Store),
     transitions: Vec<Transition<Event, State, Store>>,
     pub state: State,
     pub store: Store,
@@ -62,6 +63,7 @@ where
             // If condition is met call the after trigger and change internal state
             if (transition.condition)(&self.store) {
                 (transition.after_event)(&mut self.store);
+                (self.global_action)(&mut self.store);
                 self.state = transition.to_state;
                 break;
             }
@@ -80,10 +82,17 @@ where
                 transitions: Vec::new(),
                 state: initial_state,
                 store: data_store,
+                global_action: |_| {},
             },
             last_added_state: initial_state,
             errors: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub fn set_global_action(mut self, global_action: fn(&mut Store)) -> Self {
+        self.state_machine.global_action = global_action;
+        self
     }
 
     #[must_use]
