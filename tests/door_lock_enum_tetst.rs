@@ -47,7 +47,7 @@ fn create_lock() -> StateMachine<Event, States, Store> {
 
     // Construct state machine.
     StateMachineBuilder::new( store, States::Locked)
-    .set_global_action(|store| store.duration_in_state = Duration::from_secs(0))
+    .set_global_action(|store, _, _| store.duration_in_state = Duration::from_secs(0))
         .state(States::Locked)
             .on(Event::OpenDoor)
                 .go_to(States::Unlocking)
