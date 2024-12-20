@@ -2,7 +2,7 @@ use fluent_state_machine::{StateMachine, StateMachineBuilder};
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum States {
+enum State {
     Stopped,
     Playing,
     Paused,
@@ -18,10 +18,10 @@ enum Event {
 }
 
 
-fn create_cd_player() -> StateMachine<Event, States, i32> {
+fn create_cd_player() -> StateMachine<Event, State, i32> {
 
-    use Event::{Backward, Forward, Pause, Play, Stop};
-    use States::{Playing, Stopped, Paused};
+    use Event::*;
+    use State::*;
 
     // Create a u32 store for state machine. It could be any type you want
     let track = 0;
@@ -55,7 +55,7 @@ mod tests {
     fn test_press_play_with_no_track() {
         let mut cd = create_cd_player();
         cd.trigger(Event::Play);
-        assert_eq!(cd.state, States::Stopped);  
+        assert_eq!(cd.state, State::Stopped);  
         assert_eq!(cd.store, 0);          
     }
 
@@ -65,7 +65,7 @@ mod tests {
         cd.trigger(Event::Forward);
         cd.trigger(Event::Play);
         cd.trigger(Event::Forward);
-        assert_eq!(cd.state, States::Playing);  
+        assert_eq!(cd.state, State::Playing);  
         assert_eq!(cd.store, 1);          
     }
 
@@ -75,7 +75,7 @@ mod tests {
             cd.trigger(Event::Forward);
             cd.trigger(Event::Play);
             cd.trigger(Event::Pause);
-        assert_eq!(cd.state, States::Paused);
+        assert_eq!(cd.state, State::Paused);
         assert_eq!(cd.store, 1);
     }
 
@@ -86,7 +86,7 @@ mod tests {
             cd.trigger(Event::Play);
             cd.trigger(Event::Pause);
             cd.trigger(Event::Stop);
-        assert_eq!(cd.state, States::Stopped);
+        assert_eq!(cd.state, State::Stopped);
         assert_eq!(cd.store, 0);
     }
 
@@ -97,7 +97,7 @@ mod tests {
             cd.trigger(Event::Play);
             cd.trigger(Event::Pause);
             cd.trigger(Event::Backward);
-        assert_eq!(cd.state, States::Paused);
+        assert_eq!(cd.state, State::Paused);
         assert_eq!(cd.store, 0);
     }
 
@@ -110,7 +110,7 @@ mod tests {
             cd.trigger(Event::Pause);
             cd.trigger(Event::Forward);
             cd.trigger(Event::Play);
-        assert_eq!(cd.state, States::Playing);
+        assert_eq!(cd.state, State::Playing);
         assert_eq!(cd.store, 2);
     }
 
@@ -119,57 +119,57 @@ mod tests {
         let mut cd = create_cd_player();
 
         // Start with no track
-        assert_eq!(cd.state, States::Stopped);
+        assert_eq!(cd.state, State::Stopped);
         assert_eq!(cd.store, 0);
 
         // Try to play with no track
         cd.trigger(Event::Play);
-        assert_eq!(cd.state, States::Stopped);
+        assert_eq!(cd.state, State::Stopped);
         assert_eq!(cd.store, 0);
 
         // Forward to first track
         cd.trigger(Event::Forward);
-        assert_eq!(cd.state, States::Stopped);
+        assert_eq!(cd.state, State::Stopped);
         assert_eq!(cd.store, 1);
 
         // Play first track
         cd.trigger(Event::Play);
-        assert_eq!(cd.state, States::Playing);
+        assert_eq!(cd.state, State::Playing);
         assert_eq!(cd.store, 1);
 
         // Pause first track
         cd.trigger(Event::Pause);
-        assert_eq!(cd.state, States::Paused);
+        assert_eq!(cd.state, State::Paused);
         assert_eq!(cd.store, 1);
 
         // Forward to second track while paused
         cd.trigger(Event::Forward);
-        assert_eq!(cd.state, States::Paused);
+        assert_eq!(cd.state, State::Paused);
         assert_eq!(cd.store, 2);
 
         // Play second track
         cd.trigger(Event::Play);
-        assert_eq!(cd.state, States::Playing);
+        assert_eq!(cd.state, State::Playing);
         assert_eq!(cd.store, 2);
 
         // Try Backward to first track while playing
         cd.trigger(Event::Backward);
-        assert_eq!(cd.state, States::Playing);
+        assert_eq!(cd.state, State::Playing);
         assert_eq!(cd.store, 2);
 
         // Stop while playing
         cd.trigger(Event::Stop);
-        assert_eq!(cd.state, States::Stopped);
+        assert_eq!(cd.state, State::Stopped);
         assert_eq!(cd.store, 0);
 
         // Forward to first track
         cd.trigger(Event::Forward);
-        assert_eq!(cd.state, States::Stopped);
+        assert_eq!(cd.state, State::Stopped);
         assert_eq!(cd.store, 1);
 
         // Play first track
         cd.trigger(Event::Play);
-        assert_eq!(cd.state, States::Playing);
+        assert_eq!(cd.state, State::Playing);
         assert_eq!(cd.store, 1);
     }
 
