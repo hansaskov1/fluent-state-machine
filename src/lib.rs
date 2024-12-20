@@ -12,6 +12,23 @@ pub struct Transition<Event, State, Store> {
     condition: fn(&Store) -> bool,
 }
 
+impl<Event, State, Store> Transition<Event, State, Store> {
+    // Helper method to create a default transition
+    fn new(event: Event, from_state: State) -> Self 
+    where
+        State: Copy,
+    {
+        Self {
+            event,
+            from_state,
+            to_state: from_state, // Default to same state
+            condition: |_| true,  // Default to always true
+            before_event: |_| {}, // Default to no-op
+            after_event: |_| {},  // Default to no-op
+        }
+    }
+}
+
 pub struct StateMachine<Event, State, Store> {
     global_function_after_transition: fn(&mut Store, &State, &Event),
     transitions: Vec<Transition<Event, State, Store>>,
@@ -25,14 +42,12 @@ impl BuilderState for Initial {}
 impl BuilderState for Configuring {}
 impl BuilderState for Ready {}
 
-// Main builder struct
 pub struct StateMachineBuilder<Event, State, Store, BuilderStateType: BuilderState> {
     state_machine: StateMachine<Event, State, Store>,
     last_added_state: Option<State>,
     _builder_state: std::marker::PhantomData<BuilderStateType>,
 }
 
-// Implementation for the initial builder state
 impl<Event, State, Store> StateMachineBuilder<Event, State, Store, Initial> 
 where
     State: Copy + PartialEq,
@@ -68,7 +83,6 @@ where
     }
 }
 
-// Implementation for the configuring state
 impl<Event, State, Store> StateMachineBuilder<Event, State, Store, Configuring>
 where
     State: Copy + PartialEq,
@@ -81,14 +95,7 @@ where
 
     pub fn on(mut self, event: Event) -> TransitionBuilder<Event, State, Store> {
         let current_state = self.last_added_state.unwrap();
-        let transition = Transition {
-            event,
-            from_state: current_state,
-            to_state: current_state,
-            condition: |_| true,
-            before_event: |_| {},
-            after_event: |_| {},
-        };
+        let transition = Transition::new(event, current_state);
         
         self.state_machine.transitions.push(transition);
         let transition_index = self.state_machine.transitions.len() - 1;
@@ -105,7 +112,6 @@ where
     }
 }
 
-// Builder for configuring a specific transition
 pub struct TransitionBuilder<Event, State, Store> {
     builder: StateMachineBuilder<Event, State, Store, Configuring>,
     transition_index: usize,
@@ -142,14 +148,7 @@ where
     }
 
     pub fn on(mut self, event: Event) -> TransitionBuilder<Event, State, Store> {
-        let transition = Transition {
-            event,
-            from_state: self.current_state,
-            to_state: self.current_state,
-            condition: |_| true,
-            before_event: |_| {},
-            after_event: |_| {},
-        };
+        let transition = Transition::new(event, self.current_state);
         
         self.builder.state_machine.transitions.push(transition);
         let transition_index = self.builder.state_machine.transitions.len() - 1;
@@ -165,13 +164,11 @@ where
         self.builder.state(state)
     }
 
-    // Add build method to TransitionBuilder
     pub fn build(self) -> StateMachine<Event, State, Store> {
         self.builder.build()
     }
 }
 
-// Implementation for the StateMachine itself
 impl<Event, State, Store> StateMachine<Event, State, Store>
 where
     State: Copy + PartialEq,
