@@ -89,7 +89,6 @@ And here is a more complex example for a Cd-Player
 
 ```Rust 
 fn main() {
-
     // Using the Event and State namespace
     use Event::{Backward, Forward, Pause, Play, Stop};
     use State::{Playing, Stopped, Paused};
@@ -110,16 +109,15 @@ fn main() {
             .on(Stop).go_to(Stopped).then(|track| *track = 0)
             .on(Forward).update(|track| *track += 1)
             .on(Backward).update(|track| *track -= 1)
-        .build()
-        .unwrap();
+        .build();
 
-    println!("Track: {}, State: {}", cd_player.store, cd_player.state);
+    println!("Track: {}, State: {:?}", cd_player.store, cd_player.state);
 
-    cd_player.trigger("Forward");
-    println!("Track: {}, State: {}", cd_player.store, cd_player.state);
+    cd_player.trigger(Forward);
+    println!("Track: {}, State: {:?}", cd_player.store, cd_player.state);
 
-    cd_player.trigger("Play");
-    println!("Track: {}, State: {}", cd_player.store, cd_player.state);
+    cd_player.trigger(Play);
+    println!("Track: {}, State: {:?}", cd_player.store, cd_player.state);
 }
 ```
 

@@ -1,7 +1,10 @@
-// Marker types remain the same
+// Builder state traits
+pub trait BuilderState {}
 pub struct Initial;
 pub struct Configuring;
-pub struct Ready;
+
+impl BuilderState for Initial {}
+impl BuilderState for Configuring {}
 
 pub struct Transition<Event, State, Store> {
     event: Event,
@@ -10,6 +13,12 @@ pub struct Transition<Event, State, Store> {
     before_event: fn(&mut Store),
     after_event: fn(&mut Store),
     condition: fn(&Store) -> bool,
+}
+
+pub struct TransitionBuilder<Event, State, Store> {
+    builder: StateMachineBuilder<Event, State, Store, Configuring>,
+    transition_index: usize,
+    current_state: State,
 }
 
 impl<Event, State, Store> Transition<Event, State, Store> {
@@ -29,18 +38,59 @@ impl<Event, State, Store> Transition<Event, State, Store> {
     }
 }
 
-pub struct StateMachine<Event, State, Store> {
-    global_function_after_transition: fn(&mut Store, &State, &Event),
-    transitions: Vec<Transition<Event, State, Store>>,
-    pub state: State,
-    pub store: Store,
+impl<Event, State, Store> TransitionBuilder<Event, State, Store>
+where
+    State: Copy + PartialEq,
+    Event: PartialEq,
+{
+    pub fn go_to(mut self, target: State) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.to_state = target;
+        self
+    }
+
+    pub fn update(mut self, before_event: fn(&mut Store)) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.before_event = before_event;
+        self
+    }
+
+    pub fn only_if(mut self, condition: fn(&Store) -> bool) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.condition = condition;
+        self
+    }
+
+    pub fn then(mut self, after_event: fn(&mut Store)) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.after_event = after_event;
+        self
+    }
+
+    pub fn on(mut self, event: Event) -> TransitionBuilder<Event, State, Store> {
+        let transition = Transition::new(event, self.current_state);
+        
+        self.builder.state_machine.transitions.push(transition);
+        let transition_index = self.builder.state_machine.transitions.len() - 1;
+        
+        TransitionBuilder {
+            builder: self.builder,
+            transition_index,
+            current_state: self.current_state,
+        }
+    }
+
+    pub fn state(self, state: State) -> StateMachineBuilder<Event, State, Store, Configuring> {
+        self.builder.state(state)
+    }
+
+    pub fn build(self) -> StateMachine<Event, State, Store> {
+        self.builder.build()
+    }
 }
 
-// Builder state traits
-pub trait BuilderState {}
-impl BuilderState for Initial {}
-impl BuilderState for Configuring {}
-impl BuilderState for Ready {}
+
+
 
 pub struct StateMachineBuilder<Event, State, Store, BuilderStateType: BuilderState> {
     state_machine: StateMachine<Event, State, Store>,
@@ -112,62 +162,14 @@ where
     }
 }
 
-pub struct TransitionBuilder<Event, State, Store> {
-    builder: StateMachineBuilder<Event, State, Store, Configuring>,
-    transition_index: usize,
-    current_state: State,
+
+pub struct StateMachine<Event, State, Store> {
+    global_function_after_transition: fn(&mut Store, &State, &Event),
+    transitions: Vec<Transition<Event, State, Store>>,
+    pub state: State,
+    pub store: Store,
 }
 
-impl<Event, State, Store> TransitionBuilder<Event, State, Store>
-where
-    State: Copy + PartialEq,
-    Event: PartialEq,
-{
-    pub fn go_to(mut self, target: State) -> Self {
-        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
-        transition.to_state = target;
-        self
-    }
-
-    pub fn update(mut self, before_event: fn(&mut Store)) -> Self {
-        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
-        transition.before_event = before_event;
-        self
-    }
-
-    pub fn only_if(mut self, condition: fn(&Store) -> bool) -> Self {
-        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
-        transition.condition = condition;
-        self
-    }
-
-    pub fn then(mut self, after_event: fn(&mut Store)) -> Self {
-        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
-        transition.after_event = after_event;
-        self
-    }
-
-    pub fn on(mut self, event: Event) -> TransitionBuilder<Event, State, Store> {
-        let transition = Transition::new(event, self.current_state);
-        
-        self.builder.state_machine.transitions.push(transition);
-        let transition_index = self.builder.state_machine.transitions.len() - 1;
-        
-        TransitionBuilder {
-            builder: self.builder,
-            transition_index,
-            current_state: self.current_state,
-        }
-    }
-
-    pub fn state(self, state: State) -> StateMachineBuilder<Event, State, Store, Configuring> {
-        self.builder.state(state)
-    }
-
-    pub fn build(self) -> StateMachine<Event, State, Store> {
-        self.builder.build()
-    }
-}
 
 impl<Event, State, Store> StateMachine<Event, State, Store>
 where
