@@ -23,7 +23,6 @@ fn create_locked_turnstile() -> StateMachine<Events, States, ()> {
     .state(UnLocked)
         .on(Push).go_to(Locked)
     .build()
-    .unwrap()
 }
 
 #[cfg(test)]

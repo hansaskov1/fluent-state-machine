@@ -1,5 +1,7 @@
-mod errors;
-use errors::StateMachineError;
+// Marker types remain the same
+pub struct Initial;
+pub struct Configuring;
+pub struct Ready;
 
 pub struct Transition<Event, State, Store> {
     event: Event,
@@ -17,61 +19,21 @@ pub struct StateMachine<Event, State, Store> {
     pub store: Store,
 }
 
-/// `StateMachineBuilder` is used to build a `StateMachine`.
-///
-/// # Example
-///
-/// ```
-/// use fluent_state_machine::StateMachineBuilder;
-/// 
-/// let mut turnstyle = StateMachineBuilder::new((), "Locked")
-///     .state("Locked")
-///         .on("Coin").go_to("Unlocked")
-///     .state("Unlocked")
-///         .on("Push").go_to("Locked")
-///     .build().unwrap();
-///
-/// turnstyle.trigger("Coin");
-/// assert_eq!(turnstyle.state, "Unlocked");
-///
-/// turnstyle.trigger("Push");
-/// assert_eq!(turnstyle.state, "Locked");
-/// ```
-pub struct StateMachineBuilder<Event, State, Store> {
+// Builder state traits
+pub trait BuilderState {}
+impl BuilderState for Initial {}
+impl BuilderState for Configuring {}
+impl BuilderState for Ready {}
+
+// Main builder struct
+pub struct StateMachineBuilder<Event, State, Store, BuilderStateType: BuilderState> {
     state_machine: StateMachine<Event, State, Store>,
-    last_added_state: State,
-    errors: Vec<StateMachineError>,
+    last_added_state: Option<State>,
+    _builder_state: std::marker::PhantomData<BuilderStateType>,
 }
 
-impl<Event, State, Store> StateMachine<Event, State, Store>
-where
-    State: Copy + PartialEq,
-    Event: PartialEq,
-{
-    // Trigger an event, this will result in the state machine changing state if the condition is met. By default the condition is always true.
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn trigger(&mut self, event: Event) {
-        for transition in &mut self.transitions {
-            // Filter out transitions that do not match the trigger or the current state
-            if transition.event != event || self.state != transition.from_state {
-                continue;
-            }
-
-            // Call the before_event function
-            (transition.before_event)(&mut self.store);
-
-            // If condition is met call the after trigger and change internal state
-            if (transition.condition)(&self.store) {
-                (transition.after_event)(&mut self.store);
-                self.state = transition.to_state;
-                (self.global_function_after_transition)(&mut self.store, &self.state, &event);
-                break;
-            }
-        }
-    }
-}
-
-impl<Event, State, Store> StateMachineBuilder<Event, State, Store>
+// Implementation for the initial builder state
+impl<Event, State, Store> StateMachineBuilder<Event, State, Store, Initial> 
 where
     State: Copy + PartialEq,
     Event: PartialEq,
@@ -84,89 +46,151 @@ where
                 store: data_store,
                 global_function_after_transition: |_,_,_| {},
             },
-            last_added_state: initial_state,
-            errors: Vec::new(),
+            last_added_state: None,
+            _builder_state: std::marker::PhantomData,
         }
     }
 
-    #[must_use]
-    pub fn set_global_action(mut self, global_action: fn(&mut Store, &State, &Event)) -> Self {
+    pub fn set_global_action(
+        mut self,
+        global_action: fn(&mut Store, &State, &Event)
+    ) -> StateMachineBuilder<Event, State, Store, Initial> {
         self.state_machine.global_function_after_transition = global_action;
         self
     }
 
-    #[must_use]
-    pub const fn state(mut self, state: State) -> Self {
-        self.last_added_state = state;
+    pub fn state(self, state: State) -> StateMachineBuilder<Event, State, Store, Configuring> {
+        StateMachineBuilder {
+            state_machine: self.state_machine,
+            last_added_state: Some(state),
+            _builder_state: std::marker::PhantomData,
+        }
+    }
+}
+
+// Implementation for the configuring state
+impl<Event, State, Store> StateMachineBuilder<Event, State, Store, Configuring>
+where
+    State: Copy + PartialEq,
+    Event: PartialEq,
+{
+    pub fn state(mut self, state: State) -> Self {
+        self.last_added_state = Some(state);
         self
     }
 
-    #[must_use]
-    pub fn on(mut self, event: Event) -> Self {
-        self.state_machine.transitions.push(Transition {
+    pub fn on(mut self, event: Event) -> TransitionBuilder<Event, State, Store> {
+        let current_state = self.last_added_state.unwrap();
+        let transition = Transition {
             event,
-            from_state: self.last_added_state,
-            to_state: self.last_added_state,
+            from_state: current_state,
+            to_state: current_state,
             condition: |_| true,
             before_event: |_| {},
             after_event: |_| {},
-        });
-        self
-    }
-
-    #[must_use]
-    pub fn go_to(mut self, target: State) -> Self {
-        self.update_last_transition(|transition| transition.to_state = target);
-        self
-    }
-
-    #[must_use]
-    pub fn update(mut self, before_event: fn(&mut Store)) -> Self {
-        self.update_last_transition(|transition| transition.before_event = before_event);
-        self
-    }
-
-    #[must_use]
-    pub fn only_if(mut self, condition: fn(&Store) -> bool) -> Self {
-        self.update_last_transition(|transition| transition.condition = condition);
-        self
-    }
-
-    #[must_use]
-    pub fn then(mut self, after_event: fn(&mut Store)) -> Self {
-        self.update_last_transition(|transition| transition.after_event = after_event);
-        self
-    }
-
-    fn update_last_transition<F>(&mut self, mut update: F)
-    where
-        F: FnMut(&mut Transition<Event, State, Store>),
-    {
-        match self.state_machine.transitions.last_mut() {
-            None => self.errors.push(StateMachineError::MissingState),
-            Some(transition) => update(transition),
+        };
+        
+        self.state_machine.transitions.push(transition);
+        let transition_index = self.state_machine.transitions.len() - 1;
+        
+        TransitionBuilder {
+            builder: self,
+            transition_index,
+            current_state,
         }
     }
 
-    // Build the state machine and return the result. If there are any duplicate transitions an error will be returned.
-    pub fn build(mut self) -> Result<StateMachine<Event, State, Store>, Vec<StateMachineError>> {
-        let transitions = &self.state_machine.transitions;
+    pub fn build(self) -> StateMachine<Event, State, Store> {
+        self.state_machine
+    }
+}
 
-        for i in 0..transitions.len() {
-            for j in i + 1..transitions.len() {
-                if transitions[i].event == transitions[j].event
-                    && transitions[i].from_state == transitions[j].from_state
-                    && transitions[i].to_state == transitions[j].to_state
-                {
-                    self.errors.push(StateMachineError::DuplicateTransition);
-                }
+// Builder for configuring a specific transition
+pub struct TransitionBuilder<Event, State, Store> {
+    builder: StateMachineBuilder<Event, State, Store, Configuring>,
+    transition_index: usize,
+    current_state: State,
+}
+
+impl<Event, State, Store> TransitionBuilder<Event, State, Store>
+where
+    State: Copy + PartialEq,
+    Event: PartialEq,
+{
+    pub fn go_to(mut self, target: State) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.to_state = target;
+        self
+    }
+
+    pub fn update(mut self, before_event: fn(&mut Store)) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.before_event = before_event;
+        self
+    }
+
+    pub fn only_if(mut self, condition: fn(&Store) -> bool) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.condition = condition;
+        self
+    }
+
+    pub fn then(mut self, after_event: fn(&mut Store)) -> Self {
+        let transition = &mut self.builder.state_machine.transitions[self.transition_index];
+        transition.after_event = after_event;
+        self
+    }
+
+    pub fn on(mut self, event: Event) -> TransitionBuilder<Event, State, Store> {
+        let transition = Transition {
+            event,
+            from_state: self.current_state,
+            to_state: self.current_state,
+            condition: |_| true,
+            before_event: |_| {},
+            after_event: |_| {},
+        };
+        
+        self.builder.state_machine.transitions.push(transition);
+        let transition_index = self.builder.state_machine.transitions.len() - 1;
+        
+        TransitionBuilder {
+            builder: self.builder,
+            transition_index,
+            current_state: self.current_state,
+        }
+    }
+
+    pub fn state(self, state: State) -> StateMachineBuilder<Event, State, Store, Configuring> {
+        self.builder.state(state)
+    }
+
+    // Add build method to TransitionBuilder
+    pub fn build(self) -> StateMachine<Event, State, Store> {
+        self.builder.build()
+    }
+}
+
+// Implementation for the StateMachine itself
+impl<Event, State, Store> StateMachine<Event, State, Store>
+where
+    State: Copy + PartialEq,
+    Event: PartialEq,
+{
+    pub fn trigger(&mut self, event: Event) {
+        for transition in &mut self.transitions {
+            if transition.event != event || self.state != transition.from_state {
+                continue;
+            }
+
+            (transition.before_event)(&mut self.store);
+
+            if (transition.condition)(&self.store) {
+                (transition.after_event)(&mut self.store);
+                self.state = transition.to_state;
+                (self.global_function_after_transition)(&mut self.store, &self.state, &event);
+                break;
             }
         }
-
-        if !self.errors.is_empty() {
-            return Err(self.errors);
-        }
-
-        Ok(self.state_machine)
     }
 }

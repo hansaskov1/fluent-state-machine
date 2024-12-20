@@ -67,7 +67,6 @@ fn create_lock() -> StateMachine<Event, States, Store> {
                 .go_to(States::Locked)
                 .only_if(|store| store.lock_sensor == LockSensor::Locked)
         .build()
-        .unwrap()
 }
 
 

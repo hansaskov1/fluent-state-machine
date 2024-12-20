@@ -41,7 +41,6 @@ fn create_cd_player() -> StateMachine<Event, State, i32> {
             .on(Forward).update(|track| *track += 1)
             .on(Backward).update(|track| *track -= 1)
         .build()
-        .unwrap()
 }
 
 

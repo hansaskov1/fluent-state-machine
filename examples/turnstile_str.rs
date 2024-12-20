@@ -6,7 +6,7 @@ fn main() {
             .on("Coin").go_to("Unlocked")
         .state("Unlocked")
             .on("Push").go_to("Locked")
-        .build().unwrap();
+        .build();
 
     turnstyle.trigger("Coin");
     println!("State: {}", turnstyle.state);

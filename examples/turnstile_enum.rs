@@ -22,7 +22,7 @@ fn main() {
             .on(Coin).go_to(UnLocked)
         .state(UnLocked)
             .on(Push).go_to(Locked)
-        .build().unwrap();
+        .build();
 
     turnstyle.trigger(Coin);
     println!("State: {:?}", turnstyle.state);

@@ -37,8 +37,7 @@ fn main() {
             .on(Stop).go_to(Stopped).then(|track| *track = 0)
             .on(Forward).update(|track| *track += 1)
             .on(Backward).update(|track| *track -= 1)
-        .build()
-        .unwrap();
+        .build();
 
     println!("Track: {}, State: {:?}", cd_player.store, cd_player.state);
 
