@@ -20,10 +20,10 @@ cd state_machine_dsl
 ```
 
 ### Running the Project
-You can run one of the three available examples [cd_player](examples/cd_player.rs),  [turnstile_enum](examples/turnstile_enum.rs), [turnstile_str](examples/turnstile_str.rs). Here is how to run the cd_player example
+You can run one of the three available examples [cd_player str](examples/cd_player_str.rs),  [turnstile_enum](examples/cd_player_enum.rs), [turnstile_str](examples/turnstile_str.rs), [turnstile_str](examples/turnstile_enum.rs). Here is how to run the cd_player example
 
 ```sh
-cargo run --example cd_player
+cargo run --example cd_player_str 
 ```
 
 ### Running the Tests
@@ -39,21 +39,29 @@ cargo test
 ### Creating a Turnstile State Machine with String Literals
 
 ```rs
+use fluent_state_machine::StateMachineBuilder;
+
 fn main() {
     let mut turnstyle = StateMachineBuilder::new((), "Locked")
         .state("Locked")
             .on("Coin").go_to("Unlocked")
         .state("Unlocked")
             .on("Push").go_to("Locked")
-        .build().unwrap();
+        .build();
 
     turnstyle.trigger("Coin");
+    println!("State: {}", turnstyle.state);
+
+    turnstyle.trigger("Push");
     println!("State: {}", turnstyle.state);
 }
 ```
 
-This code will print out `State: UnLocked`
-
+This code will print out 
+```bash
+State: Unlocked
+State: Locked
+```
 ### Creating a Turnstile State Machine with Enums
 
 ```rs
@@ -88,7 +96,11 @@ fn main() {
     println!("State: {:?}", turnstyle.state);
 }
 ```
-This will also print out "State: UnLocked"
+This code will also print out 
+```bash
+State: Unlocked
+State: Locked
+```
 
 
 And here is a more complex example for a Cd-Player
