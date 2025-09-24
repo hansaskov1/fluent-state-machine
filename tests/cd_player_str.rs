@@ -1,7 +1,5 @@
 use fluent_state_machine::{StateMachine, StateMachineBuilder};
 
-
-
 fn create_cd_player() -> StateMachine<&'static str , &'static str, i32> {
 
     // Create store for state machine. In this case it is an integer

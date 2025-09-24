@@ -19,7 +19,6 @@ fn create_soda_machine() -> StateMachine<Event, State, (i32, i32)> {
     use Event::{Coin, Coke, Sprite, Refill};
     use State::{Start, Select};
 
-
     let max_coke = 3;
     let max_sprite = 3;
 
@@ -27,18 +26,17 @@ fn create_soda_machine() -> StateMachine<Event, State, (i32, i32)> {
 
     let soda_machine = StateMachineBuilder::new(container, Start)
         .state(Start)
-            .on(Coin).go_to(Select)
+            .on(Coin)
+                .go_to(Select)
             .on(Refill)
                 .update(|(coke, sprite)| {println!("Pow"); *coke = 3; *sprite = 3;})
         .state(Select)
-            .on(Coke).go_to(Start)
-                .then(|(coke, _sprite)| if *coke > 0 {
-                    *coke -= 1
-                })
-            .on(Sprite).go_to(Start)
-            .then(|(coke, _sprite)| if *coke > 0 {
-                *coke -= 1
-            })
+            .on(Coke)
+                .go_to(Start)
+                .then(|(coke, _)| if *coke > 0 { *coke -= 1 })
+            .on(Sprite)
+                .go_to(Start)
+                .then(|(_, sprite)| if *sprite > 0 { *sprite -= 1 })
         .build();
 
     soda_machine
