@@ -58,7 +58,7 @@ This code will print out `State: UnLocked`
 
 ```rs
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum State {
+enum States {
     Locked,
     UnLocked
 }
@@ -70,15 +70,21 @@ enum Event {
 }
 
 fn main() {
-    
-    let mut turnstyle = StateMachineBuilder::new((), State::Locked)
-        .state(State::Locked)
-            .on(Event::Coin).go_to(State::UnLocked)
-        .state(State::UnLocked)
-            .on(Event::Push).go_to(State::Locked)
-        .build().unwrap();
 
-    turnstyle.trigger(Event::Coin);
+    use Event::{Coin, Push};
+    use States::{Locked,  UnLocked};
+    
+    let mut turnstyle = StateMachineBuilder::new((), Locked)
+        .state(Locked)
+            .on(Coin).go_to(UnLocked)
+        .state(UnLocked)
+            .on(Push).go_to(Locked)
+        .build();
+
+    turnstyle.trigger(Coin);
+    println!("State: {:?}", turnstyle.state);
+
+    turnstyle.trigger(Push);
     println!("State: {:?}", turnstyle.state);
 }
 ```
